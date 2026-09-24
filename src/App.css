@@ -1,0 +1,51 @@
+/* src/App.css */
+
+/* Center the arcade frame in the viewport with outer breathing room */
+.app-viewport {
+  height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  overflow: hidden; /* Prevents the whole browser page from scrolling */
+}
+
+/* The transparent 3D arcade cabinet bezel */
+.arcade-frame {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  background: transparent;
+  border: 3px solid var(--google-blue);
+  border-radius: 0;
+  
+  /* 3D offset shadow */
+  box-shadow: 
+    4px 4px 0px 0px var(--google-red),
+    8px 8px 0px 0px var(--google-yellow),
+    12px 12px 0px 0px var(--google-green);
+    
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Inner content area: scrolls independently while the header stays fixed at the top */
+.arcade-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--space-bg-light-gray) transparent;
+}
+
+.arcade-content::-webkit-scrollbar {
+  width: 8px;
+}
+.arcade-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.arcade-content::-webkit-scrollbar-thumb {
+  background: var(--space-bg-light-gray);
+  border-radius: 0;
+}

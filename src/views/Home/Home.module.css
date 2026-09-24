@@ -1,0 +1,45 @@
+/* src/views/Home/Home.module.css */
+
+.homeContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.heading {
+  color: var(--subtitle-yellow, #fff000);
+  font-family: 'ArcadeRaiders', monospace;
+  font-size: clamp(1.2rem, 3.5vw, 2.2rem);
+  letter-spacing: 0.08em;
+  margin: 0 0 2rem 0;
+  text-align: center;
+  text-shadow: 2px 2px 0px #000;
+  max-width: 100%;
+}
+
+/* Desktop: Balanced 2x2 Grid */
+.buttonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 2.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Mobile Breakpoint: Switches to 1 vertical column */
+@media (max-width: 768px) {
+  .heading {
+    font-size: clamp(0.75rem, 4.3vw, 1.35rem);
+    letter-spacing: 0.03em;
+    margin-bottom: 1.5rem;
+  }
+
+  .buttonGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}

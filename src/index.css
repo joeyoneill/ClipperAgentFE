@@ -1,0 +1,44 @@
+/* Custom Fonts */
+@font-face {
+    font-family: 'ArcadeRaiders';
+    src: url('./assets/fonts/ArcadeRaiders.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'PixelLife';
+    src: url('./assets/fonts/PIXEL-LI.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Global Styles */
+:root {
+  --google-blue: #4285f4;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc05;
+  --google-green: #34a853;
+
+  --subtitle-yellow: #FFF000;
+
+  --space-bg-dark-gray: #353333;
+  --space-bg-light-gray: #757373;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url('./assets/space_bg_tile.gif');
+  background-repeat: repeat;
+  background-size: auto;
+  color: #ffffff;
+  font-family: 'ArcadeRaiders', monospace, sans-serif;
+}
