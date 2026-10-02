@@ -22,7 +22,7 @@
 .backBtn {
     align-self: flex-start;
     background: var(--space-bg-dark-gray);
-    color: #fff;
+    color: var(--subtitle-yellow);
     border: 2px solid var(--google-blue);
     box-shadow: 3px 3px 0px 0px var(--google-red);
     font-family: 'ArcadeRaiders', monospace;
@@ -64,11 +64,11 @@
     width: 100%;
     max-width: 820px;
     min-height: 300px;
-    background: rgba(53, 51, 51, 0.85);
+    background: rgba(53, 51, 51, 0.80);
     border: 3px dashed var(--google-blue);
     box-shadow:
-        4px 4px 0px 0px var(--google-red),
-        8px 8px 0px 0px var(--google-yellow);
+        3px 3px 0px 0px var(--google-red),
+        6px 6px 0px 0px var(--google-yellow);
     display: flex;
     flex-direction: column;
     align-items: center;
