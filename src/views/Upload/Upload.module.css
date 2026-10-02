@@ -1,0 +1,329 @@
+/* src/views/Upload/Upload.module.css */
+
+.uploadContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+    gap: 1.5rem;
+}
+
+.topBar {
+    width: 100%;
+    max-width: 820px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.backBtn {
+    align-self: flex-start;
+    background: var(--space-bg-dark-gray);
+    color: #fff;
+    border: 2px solid var(--google-blue);
+    box-shadow: 3px 3px 0px 0px var(--google-red);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+}
+
+.backBtn:hover {
+    background: var(--google-blue);
+}
+
+.heading {
+    color: var(--subtitle-yellow, #fff000);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: clamp(1.1rem, 3vw, 1.85rem);
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-align: center;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.errorBanner {
+    width: 100%;
+    max-width: 820px;
+    background: rgba(234, 67, 53, 0.2);
+    border: 3px solid var(--google-red);
+    box-shadow: 4px 4px 0px 0px #000;
+    color: #fff;
+    padding: 0.85rem 1rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    box-sizing: border-box;
+}
+
+/* DROPZONE */
+.dropzone {
+    width: 100%;
+    max-width: 820px;
+    min-height: 300px;
+    background: rgba(53, 51, 51, 0.85);
+    border: 3px dashed var(--google-blue);
+    box-shadow:
+        4px 4px 0px 0px var(--google-red),
+        8px 8px 0px 0px var(--google-yellow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.1s ease;
+    text-align: center;
+}
+
+.dropzone:hover,
+.dropzoneActive {
+    border-style: solid;
+    border-color: var(--google-green);
+    transform: translate(-2px, -2px);
+}
+
+.dropIcon {
+    font-size: 2.5rem;
+    color: var(--subtitle-yellow);
+    margin-bottom: 1rem;
+    text-shadow: 3px 3px 0px var(--google-red);
+}
+
+.dropTitle {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    color: #ffffff;
+    margin: 0 0 0.6rem 0;
+}
+
+.dropSub {
+    font-family: 'PixelLife', monospace;
+    font-size: 1.05rem;
+    color: var(--space-bg-light-gray);
+    margin: 0 0 1.5rem 0;
+}
+
+.formatBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+.formatBadges span {
+    background: #000;
+    border: 2px solid var(--google-yellow);
+    color: var(--subtitle-yellow);
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.6rem;
+}
+
+/* DECK INSPECTOR CARD */
+.deckCard {
+    width: 100%;
+    max-width: 820px;
+    background: rgba(53, 51, 51, 0.92);
+    border: 3px solid var(--google-blue);
+    box-shadow:
+        4px 4px 0px 0px var(--google-red),
+        8px 8px 0px 0px var(--google-yellow),
+        12px 12px 0px 0px var(--google-green);
+    padding: 1.5rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.deckHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    border-bottom: 2px solid var(--space-bg-light-gray);
+    padding-bottom: 0.85rem;
+}
+
+.badge {
+    background: var(--google-blue);
+    color: #fff;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    border: 2px solid #fff;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.filename {
+    font-family: 'PixelLife', monospace;
+    font-size: 1.2rem;
+    color: var(--subtitle-yellow);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* TELEMETRY GRID */
+.telemetryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.telemetryItem {
+    background: #1c1b1b;
+    border: 2px solid var(--space-bg-light-gray);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.telemetryLabel {
+    font-family: 'PixelLife', monospace;
+    font-size: 0.85rem;
+    color: var(--space-bg-light-gray);
+}
+
+.telemetryValue {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.95rem;
+    color: #fff;
+}
+
+.telemetryStatus {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.95rem;
+    color: var(--google-green);
+}
+
+/* ARCADE SEGMENTED PROGRESS BAR */
+.progressSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.segmentedBar {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 4px;
+    background: #000;
+    border: 3px solid #fff;
+    padding: 6px;
+}
+
+.segment {
+    height: 22px;
+    background: #222;
+}
+
+.segmentFilled {
+    background: var(--google-green);
+    box-shadow: 0 0 6px var(--google-green);
+}
+
+.segmentPaused {
+    background: var(--google-yellow);
+    box-shadow: 0 0 6px var(--google-yellow);
+}
+
+.progressStats {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 1.05rem;
+    color: var(--subtitle-yellow);
+}
+
+/* ACTION BUTTONS */
+.actionRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.warningBtn,
+.dangerBtn {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.9rem;
+    padding: 0.8rem 1.3rem;
+    border: 3px solid #fff;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.08s ease;
+}
+
+.primaryBtn {
+    background: var(--google-green);
+    box-shadow: 4px 4px 0px 0px #000;
+}
+
+.secondaryBtn {
+    background: var(--google-blue);
+    box-shadow: 4px 4px 0px 0px #000;
+}
+
+.warningBtn {
+    background: var(--google-yellow);
+    color: #000;
+    box-shadow: 4px 4px 0px 0px #000;
+}
+
+.dangerBtn {
+    background: var(--google-red);
+    box-shadow: 4px 4px 0px 0px #000;
+}
+
+.primaryBtn:hover,
+.secondaryBtn:hover,
+.warningBtn:hover,
+.dangerBtn:hover {
+    transform: translate(-2px, -2px);
+}
+
+.primaryBtn:disabled,
+.dangerBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* SUCCESS BOX */
+.successBox {
+    border-top: 2px dashed var(--google-green);
+    padding-top: 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.successTitle {
+    color: var(--google-green);
+    font-size: 1.1rem;
+    margin: 0;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.videoIdText {
+    font-family: 'PixelLife', monospace;
+    color: var(--space-bg-light-gray);
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .telemetryGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

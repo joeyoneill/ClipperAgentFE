@@ -1,14 +1,30 @@
 // src/views/Upload/Upload.tsx
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import type { FlowMode } from '../../types/flow';
 import { useUpload } from '../../context/UploadContext';
+import styles from './Upload.module.css';
 
 interface UploadProps {
     onSelectMode: (mode: FlowMode) => void;
 }
 
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(i >= 2 ? 2 : 0)} ${sizes[i]}`;
+}
+
+function formatDuration(seconds: number | null): string {
+    if (seconds === null || seconds <= 0) return '--:--:--';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return [hrs, mins, secs].map((v) => String(v).padStart(2, '0')).join(':');
+}
+
 export const Upload: React.FC<UploadProps> = ({ onSelectMode }) => {
-    // 1. Pull state and action functions from UploadContext
     const {
         file,
         metadata,
@@ -24,121 +40,272 @@ export const Upload: React.FC<UploadProps> = ({ onSelectMode }) => {
         resetUpload,
     } = useUpload();
 
-    // 2. When user picks a file from disk, validate & extract metadata
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (stage === 'IDLE') setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (stage !== 'IDLE') return;
+
+        const droppedFile = e.dataTransfer.files?.[0];
+        if (droppedFile) {
+            await selectFile(droppedFile);
+        }
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const pickedFile = e.target.files?.[0];
         if (pickedFile) {
             await selectFile(pickedFile);
         }
-        e.target.value = ''; // Reset input so picking the same file again still triggers onChange
+        e.target.value = '';
     };
 
+    const isTransferActive =
+        stage === 'INITIALIZING' ||
+        stage === 'UPLOADING' ||
+        stage === 'PAUSED' ||
+        stage === 'FINALIZING';
+
+    // 20 discrete arcade LED segments for the progress bar
+    const totalSegments = 20;
+    const filledSegments = Math.round((progress.percentage / 100) * totalSegments);
+
     return (
-        <div>
-            {/* Navigation back to HOME */}
-            <button type="button" onClick={() => onSelectMode('HOME')}>
-                &lt; BACK
-            </button>
+        <div className={styles.uploadContainer}>
+            <div className={styles.topBar}>
+                <button
+                    type="button"
+                    className={styles.backBtn}
+                    onClick={() => onSelectMode('HOME')}
+                >
+                    &lt; MAIN DECK
+                </button>
+                <h2 className={styles.heading}>&lt;INSERT LONG-FORM VIDEO&gt;</h2>
+            </div>
 
-            <h2>Video Upload</h2>
-
-            {/* Error display if validation or upload fails */}
-            {errorMsg && <p style={{ color: 'red' }}>Error: {errorMsg}</p>}
-
-            {/* STEP 1: Pick a file (only shown when no file is loaded) */}
-            {!file && stage === 'IDLE' && (
-                <div>
-                    <input
-                        type="file"
-                        accept=".mp4,.webm,.mov,.avi,.mkv,video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska"
-                        onChange={handleFileChange}
-                    />
+            {errorMsg && (
+                <div className={styles.errorBanner}>
+                    <span>! SYSTEM ALERT: {errorMsg}</span>
                 </div>
             )}
 
-            {/* STEP 2: File is loaded -> Show extracted metadata & upload controls */}
+            {/* STATE 1: NO FILE SELECTED -> DROPZONE */}
+            {!file && stage === 'IDLE' && (
+                <div
+                    className={`${styles.dropzone} ${isDragging ? styles.dropzoneActive : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".mp4,.webm,.mov,.avi,.mkv,video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska"
+                        onChange={handleFileChange}
+                        hidden
+                    />
+                    <div className={styles.dropIcon}>[ ▲ ]</div>
+                    <p className={styles.dropTitle}>DROP VIDEO TAPE HERE</p>
+                    <p className={styles.dropSub}>OR CLICK TO BROWSE LOCAL DISK</p>
+                    <div className={styles.formatBadges}>
+                        <span>MP4</span>
+                        <span>WEBM</span>
+                        <span>MOV</span>
+                        <span>AVI</span>
+                        <span>MKV</span>
+                    </div>
+                </div>
+            )}
+
+            {/* STATE 2: FILE SELECTED -> TAPE DECK INSPECTOR & PROGRESS */}
             {file && metadata && (
-                <div>
-                    <p>Filename: {metadata.filename}</p>
-                    <p>Format: {metadata.formatLabel}</p>
-                    <p>Size: {metadata.sizeBytes} bytes</p>
-                    <p>Duration: {metadata.durationSeconds ?? 'Unknown'} seconds</p>
-                    <p>Status: {stage}</p>
+                <div className={styles.deckCard}>
+                    <div className={styles.deckHeader}>
+                        <span className={styles.badge}>{metadata.formatLabel}</span>
+                        <span className={styles.filename} title={metadata.filename}>
+                            {metadata.filename}
+                        </span>
+                    </div>
 
-                    {/* Progress readout once upload starts */}
-                    {stage !== 'IDLE' && (
-                        <div>
-                            <progress value={progress.percentage} max={100} />
-                            <p>
-                                {progress.percentage.toFixed(1)}% ({progress.bytesUploaded} /{' '}
-                                {progress.totalBytes} bytes) — Chunk {progress.currentChunk}/
-                                {progress.totalChunks}
-                            </p>
+                    <div className={styles.telemetryGrid}>
+                        <div className={styles.telemetryItem}>
+                            <span className={styles.telemetryLabel}>FILE SIZE</span>
+                            <span className={styles.telemetryValue}>
+                                {formatBytes(metadata.sizeBytes)}
+                            </span>
+                        </div>
+                        <div className={styles.telemetryItem}>
+                            <span className={styles.telemetryLabel}>DURATION</span>
+                            <span className={styles.telemetryValue}>
+                                {formatDuration(metadata.durationSeconds)}
+                            </span>
+                        </div>
+                        <div className={styles.telemetryItem}>
+                            <span className={styles.telemetryLabel}>RESOLUTION</span>
+                            <span className={styles.telemetryValue}>
+                                {metadata.width && metadata.height
+                                    ? `${metadata.width}x${metadata.height}`
+                                    : 'N/A'}
+                            </span>
+                        </div>
+                        <div className={styles.telemetryItem}>
+                            <span className={styles.telemetryLabel}>STATUS</span>
+                            <span className={styles.telemetryStatus}>{stage}</span>
+                        </div>
+                    </div>
+
+                    {/* PROGRESS MONITOR */}
+                    {(isTransferActive || stage === 'SUCCESS' || stage === 'ERROR') && (
+                        <div className={styles.progressSection}>
+                            <div className={styles.segmentedBar}>
+                                {Array.from({ length: totalSegments }).map((_, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`${styles.segment} ${
+                                            idx < filledSegments ? styles.segmentFilled : ''
+                                        } ${stage === 'PAUSED' ? styles.segmentPaused : ''}`}
+                                    />
+                                ))}
+                            </div>
+
+                            <div className={styles.progressStats}>
+                                <span>
+                                    {progress.percentage.toFixed(1)}% (
+                                    {formatBytes(progress.bytesUploaded)} /{' '}
+                                    {formatBytes(progress.totalBytes)})
+                                </span>
+                                {stage === 'UPLOADING' && (
+                                    <span>
+                                        {formatBytes(progress.speedBytesPerSec)}/s | ETA:{' '}
+                                        {formatDuration(progress.etaSeconds)}
+                                    </span>
+                                )}
+                                {stage === 'PAUSED' && <span>[ TRANSFER PAUSED ]</span>}
+                                {stage === 'FINALIZING' && <span>[ VERIFYING CLOUD BLOB... ]</span>}
+                            </div>
                         </div>
                     )}
 
-                    {/* Controls when file is selected but upload hasn't started */}
+                    {/* BUTTONS: READY TO START */}
                     {stage === 'IDLE' && (
-                        <div>
-                            <button type="button" onClick={startUpload}>
-                                Start Upload
+                        <div className={styles.actionRow}>
+                            <button
+                                type="button"
+                                className={styles.primaryBtn}
+                                onClick={startUpload}
+                            >
+                                [ START UPLOAD ]
                             </button>
-                            <button type="button" onClick={resetUpload}>
-                                Remove File
+                            <button
+                                type="button"
+                                className={styles.secondaryBtn}
+                                onClick={resetUpload}
+                            >
+                                [ EJECT TAPE ]
                             </button>
                         </div>
                     )}
 
-                    {/* Controls while uploading or paused */}
-                    {(stage === 'INITIALIZING' ||
-                        stage === 'UPLOADING' ||
-                        stage === 'PAUSED' ||
-                        stage === 'FINALIZING') && (
-                        <div>
+                    {/* BUTTONS: ACTIVE TRANSFER */}
+                    {isTransferActive && (
+                        <div className={styles.actionRow}>
                             {stage === 'UPLOADING' && (
-                                <button type="button" onClick={pauseUpload}>
-                                    Pause
+                                <button
+                                    type="button"
+                                    className={styles.warningBtn}
+                                    onClick={pauseUpload}
+                                >
+                                    [ || PAUSE ]
                                 </button>
                             )}
                             {stage === 'PAUSED' && (
-                                <button type="button" onClick={resumeUpload}>
-                                    Resume
+                                <button
+                                    type="button"
+                                    className={styles.primaryBtn}
+                                    onClick={resumeUpload}
+                                >
+                                    [ &gt; RESUME ]
                                 </button>
                             )}
                             <button
                                 type="button"
+                                className={styles.dangerBtn}
                                 onClick={cancelUpload}
                                 disabled={stage === 'FINALIZING'}
                             >
-                                Cancel Upload
+                                [ X ABORT ]
                             </button>
                         </div>
                     )}
 
-                    {/* Controls if an error occurred */}
+                    {/* BUTTONS: ERROR */}
                     {stage === 'ERROR' && (
-                        <div>
+                        <div className={styles.actionRow}>
                             <button
                                 type="button"
+                                className={styles.primaryBtn}
                                 onClick={
                                     progress.bytesUploaded > 0 ? resumeUpload : startUpload
                                 }
                             >
-                                Retry
+                                [ RETRY TRANSFER ]
                             </button>
-                            <button type="button" onClick={cancelUpload}>
-                                Cancel
+                            <button
+                                type="button"
+                                className={styles.dangerBtn}
+                                onClick={cancelUpload}
+                            >
+                                [ CLEAR ]
                             </button>
                         </div>
                     )}
 
-                    {/* Controls when upload finishes */}
+                    {/* BUTTONS: COMPLETE */}
                     {stage === 'SUCCESS' && (
-                        <div>
-                            <p>Upload Complete! Video ID: {videoId}</p>
-                            <button type="button" onClick={resetUpload}>
-                                Upload Another Video
-                            </button>
+                        <div className={styles.successBox}>
+                            <p className={styles.successTitle}>
+                                ★ STAGE CLEAR: VIDEO UPLOADED TO VAULT ★
+                            </p>
+                            {videoId && <p className={styles.videoIdText}>TAPE ID: {videoId}</p>}
+                            <div className={styles.actionRow}>
+                                <button
+                                    type="button"
+                                    className={styles.primaryBtn}
+                                    onClick={() => onSelectMode('VAULT')}
+                                >
+                                    [ OPEN VAULT ]
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.secondaryBtn}
+                                    onClick={() => onSelectMode('CHAT')}
+                                >
+                                    [ CLIPPING STUDIO ]
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.secondaryBtn}
+                                    onClick={resetUpload}
+                                >
+                                    [ + UPLOAD ANOTHER ]
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
