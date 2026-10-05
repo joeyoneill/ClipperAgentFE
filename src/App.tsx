@@ -5,6 +5,7 @@ import { Header } from './components/header/Header';
 import { Home } from './views/Home/Home';
 import { Upload } from './views/Upload/Upload';
 import { UploadProvider, useUpload } from './context/UploadContext';
+import { Vault } from './views/Vault/Vault';
 import type { FlowMode } from './types/flow';
 import './App.css';
 
@@ -53,7 +54,12 @@ function ArcadeShell() {
                 <main className="arcade-content">
                     {currView === 'HOME' && <Home onSelectMode={setCurrView} />}
                     {currView === 'UPLOAD' && <Upload onSelectMode={setCurrView} />}
-                    {currView !== 'HOME' && currView !== 'UPLOAD' && (
+                    {currView === 'VAULT' && <Vault onSelectMode={setCurrView} />}
+                    {
+                        currView !== 'HOME' &&
+                        currView !== 'UPLOAD' &&
+                        currView !== 'VAULT' &&
+                    (
                         <div style={{ textAlign: 'center', padding: '2rem' }}>
                             <p>Active Flow: {currView}</p>
                             <button onClick={() => setCurrView('HOME')}>&lt; BACK</button>
