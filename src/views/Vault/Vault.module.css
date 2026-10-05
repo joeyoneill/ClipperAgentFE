@@ -178,6 +178,27 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    position: relative;
+}
+
+.fileMain:hover::after {
+    content: attr(data-fullname);
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 6px);
+    background: #000;
+    color: var(--subtitle-yellow);
+    border: 2px solid var(--google-blue);
+    box-shadow: 3px 3px 0px 0px var(--google-red);
+    font-family: 'PixelLife', monospace;
+    font-size: 0.95rem;
+    padding: 0.35rem 0.6rem;
+    white-space: normal;
+    word-break: break-all;
+    min-width: 220px;
+    max-width: 420px;
+    z-index: 20;
+    pointer-events: none;
 }
 
 .formatBadge {

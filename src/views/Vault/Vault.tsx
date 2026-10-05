@@ -181,7 +181,10 @@ export const Vault: React.FC<VaultProps> = ({ onSelectMode }) => {
                                     <tr key={vid} className={styles.tableRow}>
                                         {/* FILENAME + FORMAT BADGE */}
                                         <td className={styles.fileCell}>
-                                            <div className={styles.fileMain}>
+                                            <div 
+                                                className={styles.fileMain}
+                                                data-fullname={video.filename}
+                                            >
                                                 <span className={styles.formatBadge}>
                                                     {getFormatBadge(video.content_type)}
                                                 </span>
