@@ -195,11 +195,6 @@ export const Vault: React.FC<VaultProps> = ({ onSelectMode }) => {
                                                     {video.filename}
                                                 </span>
                                             </div>
-                                            {video.error_msg && (
-                                                <div className={styles.rowError}>
-                                                    ! {video.error_msg}
-                                                </div>
-                                            )}
                                         </td>
 
                                         {/* STATUS BADGE */}
@@ -208,6 +203,11 @@ export const Vault: React.FC<VaultProps> = ({ onSelectMode }) => {
                                                 className={`${styles.statusBadge} ${
                                                     styles[`status_${video.status}`] || ''
                                                 }`}
+                                                onClick={
+                                                    video.error_msg
+                                                        ? () => console.log(video.error_msg)
+                                                        : undefined
+                                                }
                                             >
                                                 {video.status}
                                             </span>
