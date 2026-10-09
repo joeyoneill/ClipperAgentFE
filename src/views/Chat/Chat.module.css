@@ -1,0 +1,820 @@
+/* src/views/Chat/Chat.module.css */
+
+.studioContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    box-sizing: border-box;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.topBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.backBtn {
+    background: var(--space-bg-dark-gray);
+    color: var(--subtitle-yellow);
+    border: 2px solid var(--google-blue);
+    box-shadow: 3px 3px 0px 0px var(--google-red);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.8rem;
+    padding: 0.45rem 0.85rem;
+    cursor: pointer;
+}
+
+.backBtn:hover {
+    background: var(--google-blue);
+}
+
+.heading {
+    color: var(--subtitle-yellow, #fff000);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    letter-spacing: 0.06em;
+    margin: 0;
+    text-align: center;
+    text-shadow: 2px 2px 0px #000;
+}
+
+.connectionIndicator {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #1c1b1b;
+    border: 2px solid var(--space-bg-light-gray);
+    padding: 0.35rem 0.65rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.statusDotOnline {
+    width: 10px;
+    height: 10px;
+    background: var(--google-green);
+    box-shadow: 0 0 6px var(--google-green);
+}
+
+.statusDotOffline {
+    width: 10px;
+    height: 10px;
+    background: var(--google-red);
+    box-shadow: 0 0 6px var(--google-red);
+}
+
+.errorBanner {
+    background: rgba(234, 67, 53, 0.25);
+    border: 3px solid var(--google-red);
+    box-shadow: 4px 4px 0px 0px #000;
+    color: #fff;
+    padding: 0.65rem 1rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.dismissBtn {
+    background: transparent;
+    border: none;
+    color: var(--subtitle-yellow);
+    font-family: 'ArcadeRaiders', monospace;
+    cursor: pointer;
+}
+
+/* 2-COLUMN WORKSPACE */
+.studioWorkspace {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    gap: 1rem;
+}
+
+/* LEFT SIDEBAR: TAPE DECK & COMM LOGS */
+.sidebar {
+    background: rgba(28, 27, 27, 0.92);
+    border: 3px solid var(--google-blue);
+    box-shadow: 4px 4px 0px 0px var(--google-red);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sidebarSection {
+    padding: 0.85rem;
+    border-bottom: 3px solid var(--google-blue);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 45%;
+    min-height: 0;
+}
+
+.sidebarSectionGrow {
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.78rem;
+    color: var(--subtitle-yellow);
+    border-bottom: 2px dashed var(--space-bg-light-gray);
+    padding-bottom: 0.4rem;
+}
+
+.scopeCountBadge {
+    background: var(--google-blue);
+    color: #fff;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+.allTapesBtn,
+.newSessionBtn {
+    width: 100%;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.72rem;
+    padding: 0.55rem 0.5rem;
+    border: 2px solid #fff;
+    background: #2b2929;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px 0px #000;
+}
+
+.allTapesBtnActive {
+    background: var(--google-green);
+    color: #fff;
+}
+
+.newSessionBtn {
+    background: var(--google-blue);
+}
+
+.allTapesBtn:hover:not(:disabled),
+.newSessionBtn:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+}
+
+.tapeList,
+.sessionList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    scrollbar-width: thin;
+}
+
+.tapeItem {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #141313;
+    border: 2px solid var(--space-bg-light-gray);
+    color: #ddd;
+    padding: 0.45rem 0.5rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.tapeItemPinned {
+    border-color: var(--google-yellow);
+    background: rgba(251, 188, 4, 0.14);
+    color: var(--subtitle-yellow);
+}
+
+.tapeCheck {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.7rem;
+    color: var(--google-green);
+    flex-shrink: 0;
+}
+
+.tapeFilename {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tapeDuration {
+    font-size: 0.8rem;
+    color: var(--space-bg-light-gray);
+    flex-shrink: 0;
+}
+
+.sessionItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    background: #141313;
+    border: 2px solid var(--space-bg-light-gray);
+    padding: 0.55rem 0.6rem;
+    cursor: pointer;
+}
+
+.sessionItemActive {
+    border-color: var(--google-green);
+    background: rgba(52, 168, 83, 0.16);
+    box-shadow: 2px 2px 0px 0px var(--google-green);
+}
+
+.sessionInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.sessionTitle {
+    font-family: 'PixelLife', monospace;
+    font-size: 0.95rem;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sessionMeta {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.78rem;
+    color: var(--space-bg-light-gray);
+}
+
+.sessionPinBadge {
+    color: var(--subtitle-yellow);
+}
+
+.deleteSessionBtn {
+    background: transparent;
+    border: 1px solid var(--google-red);
+    color: var(--google-red);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.68rem;
+    padding: 0.2rem 0.38rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.deleteSessionBtn:hover:not(:disabled) {
+    background: var(--google-red);
+    color: #fff;
+}
+
+.emptyHint {
+    font-family: 'PixelLife', monospace;
+    font-size: 0.85rem;
+    color: var(--space-bg-light-gray);
+    text-align: center;
+    margin: 0.75rem 0;
+}
+
+/* RIGHT CONSOLE: MESSAGE FEED & INPUT */
+.consoleSection {
+    background: rgba(28, 27, 27, 0.92);
+    border: 3px solid var(--google-blue);
+    box-shadow:
+        4px 4px 0px 0px var(--google-red),
+        8px 8px 0px 0px var(--google-yellow);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.messageFeed {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scrollbar-width: thin;
+}
+
+.emptyFeedState {
+    margin: auto;
+    text-align: center;
+    max-width: 480px;
+    padding: 2rem;
+    border: 2px dashed var(--space-bg-light-gray);
+}
+
+.emptyFeedTitle {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 1rem;
+    color: var(--subtitle-yellow);
+    margin: 0 0 0.75rem 0;
+}
+
+.emptyFeedSub {
+    font-family: 'PixelLife', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* MESSAGE BUBBLES */
+.userBubbleWrapper {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modelBubbleWrapper {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.userBubble {
+    max-width: 80%;
+    background: #142238;
+    border: 2px solid var(--google-blue);
+    box-shadow: 3px 3px 0px 0px #000;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.userBubbleSteering {
+    border-color: var(--google-yellow);
+    background: #2b2410;
+}
+
+.modelBubble {
+    width: 100%;
+    max-width: 92%;
+    background: #161515;
+    border: 2px solid var(--google-green);
+    box-shadow: 4px 4px 0px 0px #000;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bubbleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.72rem;
+    color: var(--subtitle-yellow);
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.35rem;
+}
+
+.agentNameBadge {
+    color: var(--google-green);
+}
+
+.steeringBadge {
+    background: var(--google-yellow);
+    color: #000;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.65rem;
+}
+
+.livePulseBadge {
+    color: var(--subtitle-yellow);
+    font-size: 0.7rem;
+}
+
+.messageText {
+    font-family: 'PixelLife', monospace;
+    font-size: 1.05rem;
+    color: #fff;
+    white-space: pre-wrap;
+    line-height: 1.45;
+}
+
+.cursorBlock {
+    color: var(--google-green);
+}
+
+/* TRACE / TELEMETRY DRAWER */
+.traceContainer {
+    background: #0d0d0d;
+    border: 2px solid var(--space-bg-light-gray);
+}
+
+.traceHeaderBtn {
+    width: 100%;
+    background: #1f1e1e;
+    border: none;
+    color: var(--subtitle-yellow);
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.65rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    text-align: left;
+}
+
+.traceToggleHint {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.65rem;
+    color: var(--google-blue);
+}
+
+.traceStepList {
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-top: 1px dashed #444;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.traceStepItem {
+    background: #161616;
+    border-left: 3px solid var(--google-blue);
+    padding: 0.4rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.traceStepHeader {
+    display: flex;
+    gap: 0.5rem;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.68rem;
+}
+
+.traceStepType {
+    color: var(--google-yellow);
+}
+
+.traceStepTitle {
+    color: #fff;
+}
+
+.traceThoughtText,
+.traceJsonBox {
+    margin: 0;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.85rem;
+    color: #bbb;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.interruptedBanner {
+    background: rgba(234, 67, 53, 0.2);
+    border: 2px solid var(--google-red);
+    color: var(--google-red);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.72rem;
+    padding: 0.4rem 0.6rem;
+    text-align: center;
+}
+
+/* INLINE CLIP PREVIEW CARD */
+.candidatesStack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.clipCard {
+    background: #1f1d1d;
+    border: 3px solid var(--google-yellow);
+    box-shadow: 4px 4px 0px 0px var(--google-red);
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.clipHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+}
+
+.clipTitleGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.clipBadge {
+    background: var(--google-red);
+    color: #fff;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid #fff;
+}
+
+.clipTitle {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.9rem;
+    color: var(--subtitle-yellow);
+}
+
+.clipTimeBadge {
+    background: #000;
+    border: 2px solid var(--google-green);
+    color: var(--google-green);
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.5rem;
+}
+
+.clipSourceRow {
+    font-family: 'PixelLife', monospace;
+    font-size: 0.88rem;
+    color: var(--space-bg-light-gray);
+}
+
+.videoStage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.videoViewport {
+    position: relative;
+    background: #000;
+    border: 2px solid #fff;
+    max-height: 320px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.videoElement {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    cursor: pointer;
+}
+
+.captionOverlay {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.82);
+    border: 2px solid var(--subtitle-yellow);
+    padding: 0.3rem 0.65rem;
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.8rem;
+    text-align: center;
+    pointer-events: none;
+    max-width: 90%;
+}
+
+.captionWord {
+    color: #fff;
+}
+
+.captionWordActive {
+    color: var(--subtitle-yellow);
+    text-decoration: underline;
+}
+
+.clipLedBar {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 3px;
+    background: #000;
+    border: 2px solid #fff;
+    padding: 4px;
+}
+
+.clipLedSegment {
+    height: 12px;
+    background: #222;
+}
+
+.clipLedFilled {
+    background: var(--google-green);
+    box-shadow: 0 0 5px var(--google-green);
+}
+
+.transportRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.transportBtn {
+    background: #2b2929;
+    border: 2px solid #fff;
+    color: var(--subtitle-yellow);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+}
+
+.transportBtn:hover {
+    background: var(--google-blue);
+    color: #fff;
+}
+
+.playheadReadout {
+    margin-left: auto;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    color: var(--subtitle-yellow);
+}
+
+.noPreviewBanner {
+    background: #000;
+    border: 2px dashed var(--google-red);
+    color: var(--google-red);
+    padding: 1rem;
+    text-align: center;
+    font-family: 'PixelLife', monospace;
+}
+
+.clipRationale {
+    font-family: 'PixelLife', monospace;
+    font-size: 0.95rem;
+    color: #ddd;
+    line-height: 1.35;
+}
+
+.transcriptToggleBtn {
+    background: transparent;
+    border: none;
+    color: var(--google-blue);
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.7rem;
+    padding: 0;
+    cursor: pointer;
+}
+
+.transcriptBox {
+    margin-top: 0.4rem;
+    background: #111;
+    border: 1px solid #444;
+    padding: 0.6rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+    color: var(--subtitle-yellow);
+    line-height: 1.35;
+}
+
+.clipErrorText {
+    color: var(--google-red);
+    font-family: 'PixelLife', monospace;
+    font-size: 0.9rem;
+}
+
+.clipActionRow {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 0.35rem;
+}
+
+.saveReelBtn,
+.savedBtn,
+.openReelBtn {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.78rem;
+    padding: 0.6rem 1rem;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px 0px #000;
+}
+
+.saveReelBtn {
+    background: var(--google-green);
+    color: #fff;
+}
+
+.savedBtn {
+    background: #222;
+    border-color: var(--google-green);
+    color: var(--google-green);
+    cursor: default;
+}
+
+.openReelBtn {
+    background: var(--google-blue);
+    color: #fff;
+}
+
+/* BIDI INPUT CONSOLE */
+.inputConsole {
+    border-top: 3px solid var(--google-blue);
+    background: #121111;
+    padding: 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+    flex-shrink: 0;
+}
+
+.promptTextarea {
+    flex: 1;
+    background: #000;
+    color: var(--subtitle-yellow);
+    border: 2px solid var(--space-bg-light-gray);
+    padding: 0.6rem 0.75rem;
+    font-family: 'PixelLife', monospace;
+    font-size: 1rem;
+    resize: none;
+    outline: none;
+}
+
+.promptTextarea:focus {
+    border-color: var(--google-yellow);
+}
+
+.consoleButtonCol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    justify-content: center;
+}
+
+.transmitBtn,
+.interruptBtn,
+.injectContextBtn {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.78rem;
+    padding: 0.65rem 1rem;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px 0px #000;
+    white-space: nowrap;
+}
+
+.transmitBtn {
+    background: var(--google-green);
+    color: #fff;
+    height: 100%;
+}
+
+.transmitBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.interruptBtn {
+    background: var(--google-red);
+    color: #fff;
+}
+
+.injectContextBtn {
+    background: var(--google-yellow);
+    color: #000;
+}
+
+@media (max-width: 900px) {
+    .studioWorkspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+
+    .sidebar {
+        max-height: 240px;
+    }
+}

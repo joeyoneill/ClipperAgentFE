@@ -1,13 +1,15 @@
 // src/App.tsx
 import { useState } from 'react';
-
 import { Header } from './components/header/Header';
-import { Home } from './views/Home/Home';
-import { Upload } from './views/Upload/Upload';
 import { UploadProvider, useUpload } from './context/UploadContext';
-import { Vault } from './views/Vault/Vault';
 import type { FlowMode } from './types/flow';
 import './App.css';
+
+// Views
+import { Chat } from './views/Chat/Chat';
+import { Home } from './views/Home/Home';
+import { Upload } from './views/Upload/Upload';
+import { Vault } from './views/Vault/Vault';
 
 function ArcadeShell() {
     const [currView, setCurrView] = useState<FlowMode>('HOME');
@@ -55,10 +57,12 @@ function ArcadeShell() {
                     {currView === 'HOME' && <Home onSelectMode={setCurrView} />}
                     {currView === 'UPLOAD' && <Upload onSelectMode={setCurrView} />}
                     {currView === 'VAULT' && <Vault onSelectMode={setCurrView} />}
+                    {currView === 'CHAT' && <Chat onSelectMode={setCurrView} />}
                     {
                         currView !== 'HOME' &&
                         currView !== 'UPLOAD' &&
                         currView !== 'VAULT' &&
+                        currView !== 'CHAT' &&
                     (
                         <div style={{ textAlign: 'center', padding: '2rem' }}>
                             <p>Active Flow: {currView}</p>

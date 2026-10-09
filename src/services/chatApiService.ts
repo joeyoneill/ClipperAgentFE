@@ -14,10 +14,12 @@ import type {
     SFVideo
 } from '../types/sf_videos'
 import {
-    API_BASE,
     authHeaders,
     handleJsonResponse
 } from './apiUtils'
+
+// Get API BASE
+const API_BASE = import.meta.env.VITE_BACKEND_BASE_URL
 
 ////////////////////////////////////////////////////////////////
 // Chat Session CRUD Endpoints (/api/chat/sessions)
