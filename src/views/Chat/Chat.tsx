@@ -11,9 +11,9 @@ import {
     deleteChatSession,
     fetchChatSessionDetail,
     fetchChatSessions,
-    fetchCompletedVaultVideos,
     updateChatSession,
 } from '../../services/chatApiService';
+import { getUserVideos } from '../../services/vaultService';
 import type {
     AgentTraceStep,
     ChatMessageModel,
@@ -60,6 +60,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
     const wsRef = useRef<WebSocket | null>(null);
     const streamingMsgIdRef = useRef<string | null>(null);
     const feedEndRef = useRef<HTMLDivElement | null>(null);
+    const hasBootstrappedRef = useRef(false);
 
     const scrollToBottom = useCallback(() => {
         feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,12 +94,18 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                 setErrorMsg('Authentication token missing. Please refresh.');
                 return;
             }
-            const wsUrl = buildChatStreamWsUrl(token, sessionId);
+            const wsUrl = buildChatStreamWsUrl(token);
             const socket = new WebSocket(wsUrl);
             wsRef.current = socket;
             socket.onopen = () => {
-                setWsConnected(true);
-                setErrorMsg(null);
+                // Send JWT & session_id on connection open
+                socket.send(
+                    JSON.stringify({
+                        type: 'AUTH',
+                        token,
+                        session_id: sessionId,
+                    } satisfies WSClientMessage)
+                );
             };
             socket.onclose = () => {
                 setWsConnected(false);
@@ -114,6 +121,8 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                     const frame = JSON.parse(event.data) as WSServerMessage;
                     const { type, data } = frame;
                     if (type === 'SESSION_INIT' && data.session) {
+                        setWsConnected(true);
+                        setErrorMsg(null);
                         const sess = data.session;
                         setSelectedVideoIds(sess.selected_video_ids || []);
                         setSessions((prev) => {
@@ -313,18 +322,41 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
         [connectWebSocket, getToken]
     );
 
-    // Initial Bootstrap: Fetch Vault Videos & Chat Sessions
+        // Initial Bootstrap: Fetch Vault Videos & Chat Sessions
     useEffect(() => {
-        let isMounted = true;
+        if (hasBootstrappedRef.current) return;
+        hasBootstrappedRef.current = true;
+
         async function bootstrapStudio() {
             setIsLoadingSessions(true);
             try {
-                const [vids, existingSessions] = await Promise.all([
-                    fetchCompletedVaultVideos(getToken),
+                const token = await getToken();
+                if (!token) throw new Error('NO AUTH TOKEN AVAILABLE.');
+                const [videosResult, sessionsResult] = await Promise.allSettled([
+                    getUserVideos(token),
                     fetchChatSessions(getToken),
                 ]);
-                if (!isMounted) return;
-                setVaultVideos(vids);
+
+                // Always populate Tape Selector with completed Vault videos
+                if (videosResult.status === 'fulfilled') {
+                    const completedTapes = videosResult.value.filter(
+                        (v): v is typeof v & { id: string } =>
+                            v.status === 'SUCCESSFUL' && Boolean(v.id)
+                    );
+                    setVaultVideos(completedTapes);
+                } else {
+                    setErrorMsg(
+                        videosResult.reason instanceof Error
+                            ? videosResult.reason.message
+                            : 'Failed to load Vault videos.'
+                    );
+                }
+
+                // Populate or create initial Chat Session
+                if (sessionsResult.status === 'rejected') {
+                    throw sessionsResult.reason;
+                }
+                const existingSessions = sessionsResult.value;
                 if (existingSessions.length > 0) {
                     setSessions(existingSessions);
                     await loadAndActivateSession(existingSessions[0].id);
@@ -333,7 +365,6 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         title: 'NEW CLIPPING LOG',
                         selected_video_ids: [],
                     });
-                    if (!isMounted) return;
                     setSessions([created]);
                     setActiveSessionId(created.id);
                     setMessages([]);
@@ -341,25 +372,28 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                     await connectWebSocket(created.id);
                 }
             } catch (err) {
-                if (!isMounted) return;
                 setErrorMsg(
                     err instanceof Error
                         ? err.message
                         : 'Failed to initialize Clipping Studio.'
                 );
             } finally {
-                if (isMounted) setIsLoadingSessions(false);
+                setIsLoadingSessions(false);
             }
         }
-        bootstrapStudio();
+
+        void bootstrapStudio();
+    }, [connectWebSocket, getToken, loadAndActivateSession]);
+
+    // Websocket Connection Cleanup
+    useEffect(() => {
         return () => {
-            isMounted = false;
             if (wsRef.current) {
                 wsRef.current.onclose = null;
                 wsRef.current.close();
             }
         };
-    }, [connectWebSocket, getToken, loadAndActivateSession]);
+    }, []);
 
     // Create a New Session Log
     const handleCreateSession = async () => {

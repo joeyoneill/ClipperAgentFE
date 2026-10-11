@@ -253,8 +253,8 @@
 }
 
 .sessionTitle {
-    font-family: 'PixelLife', monospace;
-    font-size: 0.95rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.15rem;
     color: #fff;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -265,8 +265,8 @@
     display: flex;
     gap: 0.4rem;
     align-items: center;
-    font-family: 'PixelLife', monospace;
-    font-size: 0.78rem;
+    font-family: 'VT323', monospace;
+    font-size: 0.95rem;
     color: var(--space-bg-light-gray);
 }
 
@@ -413,11 +413,11 @@
 }
 
 .messageText {
-    font-family: 'PixelLife', monospace;
-    font-size: 1.05rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
     color: #fff;
     white-space: pre-wrap;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .cursorBlock {
@@ -488,8 +488,8 @@
 .traceThoughtText,
 .traceJsonBox {
     margin: 0;
-    font-family: 'PixelLife', monospace;
-    font-size: 0.85rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.05rem;
     color: #bbb;
     white-space: pre-wrap;
     word-break: break-word;
@@ -673,8 +673,8 @@
 }
 
 .clipRationale {
-    font-family: 'PixelLife', monospace;
-    font-size: 0.95rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.15rem;
     color: #ddd;
     line-height: 1.35;
 }
@@ -694,8 +694,8 @@
     background: #111;
     border: 1px solid #444;
     padding: 0.6rem;
-    font-family: 'PixelLife', monospace;
-    font-size: 0.9rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
     color: var(--subtitle-yellow);
     line-height: 1.35;
 }
@@ -758,8 +758,8 @@
     color: var(--subtitle-yellow);
     border: 2px solid var(--space-bg-light-gray);
     padding: 0.6rem 0.75rem;
-    font-family: 'PixelLife', monospace;
-    font-size: 1rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
     resize: none;
     outline: none;
 }

@@ -141,7 +141,6 @@ export async function saveClipToReel(
 ////////////////////////////////////////////////////////////////
 
 export function buildChatStreamWsUrl(
-    token: string,
     sessionId?: string | null
 ): string {
     let wsBase: string;
@@ -151,10 +150,9 @@ export function buildChatStreamWsUrl(
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         wsBase = `${protocol}//${window.location.host}${API_BASE}`;
     }
-
-    const params = new URLSearchParams({ token });
     if (sessionId) {
+        const params = new URLSearchParams({ session_id: sessionId });
         params.set('session_id', sessionId);
     }
-    return `${wsBase}/api/chat/stream?${params.toString()}`;
+    return `${wsBase}/api/chat/stream`;
 }

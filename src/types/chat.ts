@@ -73,10 +73,12 @@ export interface UpdateChatSessionRequest {
 // WebSocket Protocol Frames (/api/chat/stream)
 // -----------------------------------------------------------------------------
 
-export type WSClientMessageType = 'USER_MESSAGE' | 'INTERRUPT' | 'ADD_CONTEXT' | 'SET_VIDEOS';
+export type WSClientMessageType = 'AUTH' | 'USER_MESSAGE' | 'INTERRUPT' | 'ADD_CONTEXT' | 'SET_VIDEOS';
 
 export interface WSClientMessage {
     type: WSClientMessageType;
+    token?: string | null;
+    session_id?: string | null;
     text?: string | null;
     selected_video_ids?: string[] | null;
 }
