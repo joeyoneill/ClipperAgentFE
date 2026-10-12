@@ -8,6 +8,7 @@ import {
     downloadReelClip,
     updateReelClipTitle,
 } from '../../services/reelService';
+import type { WordTimestamp } from '../../types/chat';
 import type {
     AspectRatioType,
     ResolutionType,
@@ -67,9 +68,11 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
     const [titleDraft, setTitleDraft] = useState(clip.title);
     const [isSavingTitle, setIsSavingTitle] = useState(false);
 
-    // Inline Transcript Edit State
+    // 2-Mode Subtitle Editor State ('simple' | 'words')
     const [isEditingTranscript, setIsEditingTranscript] = useState(false);
+    const [subtitleEditMode, setSubtitleEditMode] = useState<'simple' | 'words'>('simple');
     const [transcriptDraft, setTranscriptDraft] = useState(clip.transcript_text);
+    const [wordsDraft, setWordsDraft] = useState<WordTimestamp[]>(clip.words || []);
     const [isSavingTranscript, setIsSavingTranscript] = useState(false);
 
     // Export / Download Configuration State
@@ -203,26 +206,166 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
         }
     };
 
+    const openSubtitleEditor = () => {
+        setTranscriptDraft(clip.transcript_text);
+        setWordsDraft(
+            (clip.words || []).map((w) => ({
+                word: w.word,
+                start_sec: Number(w.start_sec.toFixed(2)),
+                end_sec: Number(w.end_sec.toFixed(2)),
+            }))
+        );
+        setSubtitleEditMode('simple');
+        setCardError(null);
+        setIsEditingTranscript(true);
+    };
+
+    const handleWordChange = (
+        index: number,
+        field: keyof WordTimestamp,
+        value: string | number
+    ) => {
+        setWordsDraft((prev) =>
+            prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
+        );
+    };
+
+    const handleInsertWordAfter = (index: number) => {
+        setWordsDraft((prev) => {
+            const curr = prev[index];
+            const next = prev[index + 1];
+            const gapEnd = next ? next.start_sec : clip.end_sec;
+
+            let newStart = curr.end_sec;
+            let newEnd = Math.min(clip.end_sec, Math.max(newStart + 0.2, gapEnd));
+
+            // If there is no gap between curr and next, split the current word's duration in half
+            if (newEnd <= newStart + 0.02) {
+                const mid = Number(((curr.start_sec + curr.end_sec) / 2).toFixed(2));
+                const updatedCurr = { ...curr, end_sec: mid };
+                const inserted: WordTimestamp = {
+                    word: 'word',
+                    start_sec: mid,
+                    end_sec: Number(curr.end_sec.toFixed(2)),
+                };
+                return [
+                    ...prev.slice(0, index),
+                    updatedCurr,
+                    inserted,
+                    ...prev.slice(index + 1),
+                ];
+            }
+
+            const inserted: WordTimestamp = {
+                word: 'word',
+                start_sec: Number(newStart.toFixed(2)),
+                end_sec: Number(newEnd.toFixed(2)),
+            };
+            return [...prev.slice(0, index + 1), inserted, ...prev.slice(index + 1)];
+        });
+    };
+
+    const handleRemoveWord = (index: number) => {
+        if (wordsDraft.length <= 1) return;
+        setWordsDraft((prev) => prev.filter((_, idx) => idx !== index));
+    };
+
+    const handleAuditionWord = (startSec: number) => {
+        const vid = videoRef.current;
+        if (!vid) return;
+        const clamped = Math.max(clip.start_sec, Math.min(clip.end_sec - 0.05, startSec));
+        vid.currentTime = clamped;
+        setCurrentTime(clamped);
+    };
+
     const handleSaveTranscript = async () => {
-        const trimmed = transcriptDraft.trim();
-        if (!trimmed || !clipId) return;
-        if (trimmed === clip.transcript_text) {
-            setIsEditingTranscript(false);
+        if (!clipId || isSavingTranscript) return;
+        setCardError(null);
+
+        if (subtitleEditMode === 'simple') {
+            const trimmed = transcriptDraft.trim();
+            if (!trimmed) {
+                setCardError('TRANSCRIPT TEXT CANNOT BE EMPTY.');
+                return;
+            }
+            setIsSavingTranscript(true);
+            try {
+                const token = await getToken();
+                if (!token) throw new Error('NO AUTH TOKEN AVAILABLE.');
+                const updated = await updateReelClipTitle(token, clipId, {
+                    transcript_text: trimmed,
+                });
+                onClipUpdated(updated);
+                setIsEditingTranscript(false);
+            } catch (err) {
+                setCardError(
+                    err instanceof Error ? err.message : 'FAILED TO UPDATE SUBTITLES.'
+                );
+            } finally {
+                setIsSavingTranscript(false);
+            }
             return;
         }
+
+        // Validate [ WORD TIMING ] rows on the frontend before sending
+        if (wordsDraft.length === 0) {
+            setCardError('WORD LIST CANNOT BE EMPTY.');
+            return;
+        }
+
+        const eps = 0.015;
+        for (let i = 0; i < wordsDraft.length; i++) {
+            const w = wordsDraft[i];
+            const num = i + 1;
+            const txt = w.word.trim();
+            if (!txt) {
+                setCardError(`WORD #${num} TEXT CANNOT BE EMPTY.`);
+                return;
+            }
+            if (Number.isNaN(w.start_sec) || Number.isNaN(w.end_sec)) {
+                setCardError(`WORD #${num} ("${txt}") HAS AN INVALID TIMESTAMP.`);
+                return;
+            }
+            if (w.start_sec < clip.start_sec - eps || w.end_sec > clip.end_sec + eps) {
+                setCardError(
+                    `WORD #${num} ("${txt}") TIME (${w.start_sec.toFixed(2)}s - ${w.end_sec.toFixed(
+                        2
+                    )}s) IS OUTSIDE CLIP WINDOW (${clip.start_sec.toFixed(
+                        2
+                    )}s - ${clip.end_sec.toFixed(2)}s).`
+                );
+                return;
+            }
+            if (w.start_sec >= w.end_sec) {
+                setCardError(
+                    `WORD #${num} ("${txt}") START (${w.start_sec.toFixed(
+                        2
+                    )}s) MUST BE LESS THAN END (${w.end_sec.toFixed(2)}s).`
+                );
+                return;
+            }
+            if (i > 0 && w.start_sec < wordsDraft[i - 1].end_sec - eps) {
+                setCardError(
+                    `WORD #${num} ("${txt}") START (${w.start_sec.toFixed(
+                        2
+                    )}s) OVERLAPS PREVIOUS WORD END (${wordsDraft[i - 1].end_sec.toFixed(2)}s).`
+                );
+                return;
+            }
+        }
+
         setIsSavingTranscript(true);
-        setCardError(null);
         try {
             const token = await getToken();
             if (!token) throw new Error('NO AUTH TOKEN AVAILABLE.');
             const updated = await updateReelClipTitle(token, clipId, {
-                transcript_text: trimmed,
+                words: wordsDraft,
             });
             onClipUpdated(updated);
             setIsEditingTranscript(false);
         } catch (err) {
             setCardError(
-                err instanceof Error ? err.message : 'FAILED TO UPDATE TRANSCRIPT.'
+                err instanceof Error ? err.message : 'FAILED TO UPDATE WORD TIMINGS.'
             );
         } finally {
             setIsSavingTranscript(false);
@@ -498,7 +641,7 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
                             </div>
                         )}
 
-                        {/* METADATA, RATIONALE & TRANSCRIPT */}
+                                                {/* METADATA, RATIONALE & TRANSCRIPT */}
                         <div className={styles.infoPanel}>
                             <div className={styles.sourceRow}>
                                 <strong>SOURCE TAPE:</strong> {clip.source_filename}
@@ -517,44 +660,179 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
                                         <button
                                             type="button"
                                             className={styles.renameBtn}
-                                            onClick={() => {
-                                                setTranscriptDraft(clip.transcript_text);
-                                                setIsEditingTranscript(true);
-                                            }}
+                                            onClick={openSubtitleEditor}
                                         >
                                             [ EDIT SUBTITLES ]
                                         </button>
                                     )}
                                 </div>
+
                                 {isEditingTranscript ? (
                                     <div className={styles.transcriptEditBox}>
-                                        <textarea
-                                            className={styles.transcriptTextarea}
-                                            value={transcriptDraft}
-                                            onChange={(e) =>
-                                                setTranscriptDraft(e.target.value)
-                                            }
-                                            rows={4}
-                                            disabled={isSavingTranscript}
-                                        />
+                                        {/* MODE SWITCHER BAR */}
+                                        <div className={styles.editorModeBar}>
+                                            <div className={styles.editorModeTabs}>
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.modeTabBtn} ${
+                                                        subtitleEditMode === 'simple'
+                                                            ? styles.modeTabBtnActive
+                                                            : ''
+                                                    }`}
+                                                    onClick={() =>
+                                                        setSubtitleEditMode('simple')
+                                                    }
+                                                    disabled={isSavingTranscript}
+                                                >
+                                                    [ STANDARD: TEXT EDITOR ]
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.modeTabBtn} ${
+                                                        subtitleEditMode === 'words'
+                                                            ? styles.modeTabBtnActive
+                                                            : ''
+                                                    }`}
+                                                    onClick={() =>
+                                                        setSubtitleEditMode('words')
+                                                    }
+                                                    disabled={isSavingTranscript}
+                                                >
+                                                    [ ADVANCED: TIME SYNC ]
+                                                </button>
+                                            </div>
+                                            <span className={styles.windowBoundBadge}>
+                                                BOUNDS: {clip.start_sec.toFixed(2)}s -{' '}
+                                                {clip.end_sec.toFixed(2)}s
+                                            </span>
+                                        </div>
+
+                                        {/* MODE A: SIMPLE PARAGRAPH TEXTAREA */}
+                                        {subtitleEditMode === 'simple' ? (
+                                            <textarea
+                                                className={styles.transcriptTextarea}
+                                                value={transcriptDraft}
+                                                onChange={(e) =>
+                                                    setTranscriptDraft(e.target.value)
+                                                }
+                                                rows={4}
+                                                disabled={isSavingTranscript}
+                                            />
+                                        ) : (
+                                            /* MODE B: WORD-BY-WORD + TIMESTAMP ROWS */
+                                            <div className={styles.wordListContainer}>
+                                                {wordsDraft.map((w, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={styles.wordTimingRow}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            className={styles.wordIndexBtn}
+                                                            onClick={() =>
+                                                                handleAuditionWord(w.start_sec)
+                                                            }
+                                                            title="Click to jump video player to this word"
+                                                        >
+                                                            #{String(idx + 1).padStart(2, '0')}
+                                                        </button>
+                                                        <input
+                                                            type="number"
+                                                            step="0.05"
+                                                            min={clip.start_sec}
+                                                            max={clip.end_sec}
+                                                            className={styles.wordTimeInput}
+                                                            value={w.start_sec}
+                                                            onChange={(e) =>
+                                                                handleWordChange(
+                                                                    idx,
+                                                                    'start_sec',
+                                                                    parseFloat(e.target.value)
+                                                                )
+                                                            }
+                                                            disabled={isSavingTranscript}
+                                                        />
+                                                        <span className={styles.timeDash}>
+                                                            -
+                                                        </span>
+                                                        <input
+                                                            type="number"
+                                                            step="0.05"
+                                                            min={clip.start_sec}
+                                                            max={clip.end_sec}
+                                                            className={styles.wordTimeInput}
+                                                            value={w.end_sec}
+                                                            onChange={(e) =>
+                                                                handleWordChange(
+                                                                    idx,
+                                                                    'end_sec',
+                                                                    parseFloat(e.target.value)
+                                                                )
+                                                            }
+                                                            disabled={isSavingTranscript}
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            className={styles.wordTextInput}
+                                                            value={w.word}
+                                                            onChange={(e) =>
+                                                                handleWordChange(
+                                                                    idx,
+                                                                    'word',
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            disabled={isSavingTranscript}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.wordAddBtn}
+                                                            onClick={() =>
+                                                                handleInsertWordAfter(idx)
+                                                            }
+                                                            disabled={isSavingTranscript}
+                                                            title="Insert word after this row"
+                                                        >
+                                                            +
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.wordDelBtn}
+                                                            onClick={() =>
+                                                                handleRemoveWord(idx)
+                                                            }
+                                                            disabled={
+                                                                isSavingTranscript ||
+                                                                wordsDraft.length <= 1
+                                                            }
+                                                            title="Delete this word"
+                                                        >
+                                                            X
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <div className={styles.transcriptEditActions}>
                                             <button
                                                 type="button"
                                                 className={styles.titleSaveBtn}
                                                 onClick={handleSaveTranscript}
-                                                disabled={
-                                                    isSavingTranscript ||
-                                                    !transcriptDraft.trim()
-                                                }
+                                                disabled={isSavingTranscript}
                                             >
-                                                [ {isSavingTranscript ? 'SAVING...' : 'SAVE SUBTITLES'} ]
+                                                [{' '}
+                                                {isSavingTranscript
+                                                    ? 'SAVING...'
+                                                    : 'SAVE SUBTITLES'}{' '}
+                                                ]
                                             </button>
                                             <button
                                                 type="button"
                                                 className={styles.titleCancelBtn}
                                                 onClick={() => {
-                                                    setTranscriptDraft(clip.transcript_text);
                                                     setIsEditingTranscript(false);
+                                                    setCardError(null);
                                                 }}
                                                 disabled={isSavingTranscript}
                                             >

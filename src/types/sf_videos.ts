@@ -54,6 +54,7 @@ export interface SaveClipRequest {
 export interface UpdateSFVideoRequest {
     title?: string;
     transcript_text?: string;
+    words?: WordTimestamp[];
 }
 
 export interface DownloadSFVideoRequest {
