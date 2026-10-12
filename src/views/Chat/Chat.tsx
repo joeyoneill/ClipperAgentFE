@@ -82,7 +82,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
     // ==== WEBSOCKET HANDLER ====
     // Connect WebSocket for a specific sessionId
     const connectWebSocket = useCallback(
-        async (sessionId: string) => {
+        async (sessionId: string | null = null) => {
             if (wsRef.current) {
                 wsRef.current.onclose = null;
                 wsRef.current.close();
@@ -94,11 +94,12 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                 setErrorMsg('Authentication token missing. Please refresh.');
                 return;
             }
-            const wsUrl = buildChatStreamWsUrl(token);
+            const wsUrl = buildChatStreamWsUrl(sessionId);
             const socket = new WebSocket(wsUrl);
             wsRef.current = socket;
+            
             socket.onopen = () => {
-                // Send JWT & session_id on connection open
+                // Send JWT + target session_id (null if draft) in the first frame
                 socket.send(
                     JSON.stringify({
                         type: 'AUTH',
@@ -107,31 +108,38 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                     } satisfies WSClientMessage)
                 );
             };
+            
             socket.onclose = () => {
                 setWsConnected(false);
                 setIsStreaming(false);
                 streamingMsgIdRef.current = null;
             };
+            
             socket.onerror = () => {
                 setErrorMsg('WebSocket link interrupted. Re-select log to reconnect.');
                 setIsStreaming(false);
             };
+            
             socket.onmessage = (event) => {
                 try {
                     const frame = JSON.parse(event.data) as WSServerMessage;
                     const { type, data } = frame;
-                    if (type === 'SESSION_INIT' && data.session) {
+                    if (type === 'SESSION_INIT') {
                         setWsConnected(true);
                         setErrorMsg(null);
-                        const sess = data.session;
-                        setSelectedVideoIds(sess.selected_video_ids || []);
-                        setSessions((prev) => {
-                            const exists = prev.some((s) => s.id === sess.id);
-                            if (!exists) return [sess, ...prev];
-                            return prev.map((s) => (s.id === sess.id ? sess : s));
-                        });
+                        if (data.session) {
+                            const sess = data.session;
+                            setActiveSessionId(sess.id);
+                            setSelectedVideoIds(sess.selected_video_ids || []);
+                            setSessions((prev) => {
+                                const exists = prev.some((s) => s.id === sess.id);
+                                if (!exists) return [sess, ...prev];
+                                return prev.map((s) => (s.id === sess.id ? sess : s));
+                            });
+                        }
                         return;
                     }
+                    
                     if (type === 'AGENT_THOUGHT' && data.delta) {
                         const targetId = streamingMsgIdRef.current;
                         if (!targetId) return;
@@ -159,6 +167,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         );
                         return;
                     }
+                    
                     if (type === 'TRACE_STEP' && data.step) {
                         const targetId = streamingMsgIdRef.current;
                         if (!targetId) return;
@@ -182,6 +191,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         );
                         return;
                     }
+                    
                     if (type === 'CLIP_CANDIDATE' && data.candidate) {
                         const targetId = streamingMsgIdRef.current;
                         if (!targetId) return;
@@ -201,6 +211,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         );
                         return;
                     }
+                    
                     if (type === 'AGENT_TOKEN' && data.delta) {
                         const targetId = streamingMsgIdRef.current;
                         if (!targetId) return;
@@ -213,6 +224,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         );
                         return;
                     }
+                    
                     if (type === 'TURN_COMPLETE') {
                         setIsStreaming(false);
                         streamingMsgIdRef.current = null;
@@ -226,6 +238,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         }
                         return;
                     }
+                    
                     if (type === 'TURN_INTERRUPTED') {
                         const targetId = streamingMsgIdRef.current;
                         setIsStreaming(false);
@@ -239,6 +252,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         }
                         return;
                     }
+                    
                     if (type === 'CONTEXT_ADDED') {
                         const oldTargetId = streamingMsgIdRef.current;
                         const newModelMsgId = `model-${Date.now()}`;
@@ -271,6 +285,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         ]);
                         return;
                     }
+                    
                     if (type === 'VIDEOS_UPDATED' && data.selected_video_ids) {
                         const vids = data.selected_video_ids;
                         setSelectedVideoIds(vids);
@@ -283,6 +298,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         );
                         return;
                     }
+                    
                     if (type === 'ERROR') {
                         setErrorMsg(data.message || 'An error occurred in the studio.');
                         setIsStreaming(false);
@@ -361,15 +377,12 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                     setSessions(existingSessions);
                     await loadAndActivateSession(existingSessions[0].id);
                 } else {
-                    const created = await createChatSession(getToken, {
-                        title: 'NEW CLIPPING LOG',
-                        selected_video_ids: [],
-                    });
-                    setSessions([created]);
-                    setActiveSessionId(created.id);
+                    // Start in an unsaved draft state until the user sends a message
+                    setSessions([]);
+                    setActiveSessionId(null);
                     setMessages([]);
                     setSelectedVideoIds([]);
-                    await connectWebSocket(created.id);
+                    await connectWebSocket(null);
                 }
             } catch (err) {
                 setErrorMsg(
@@ -395,24 +408,15 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
         };
     }, []);
 
-    // Create a New Session Log
+    // Enter a New Unsaved Draft Log (persisted only when first message is sent)
     const handleCreateSession = async () => {
         if (isStreaming) return;
+        // If already in an empty unsaved draft, do nothing (prevents spam)
+        if (activeSessionId === null && messages.length === 0) return;
         setErrorMsg(null);
-        try {
-            const created = await createChatSession(getToken, {
-                title: 'NEW CLIPPING LOG',
-                selected_video_ids: selectedVideoIds,
-            });
-            setSessions((prev) => [created, ...prev]);
-            setActiveSessionId(created.id);
-            setMessages([]);
-            await connectWebSocket(created.id);
-        } catch (err) {
-            setErrorMsg(
-                err instanceof Error ? err.message : 'Failed to create new log.'
-            );
-        }
+        setActiveSessionId(null);
+        setMessages([]);
+        await connectWebSocket(null);
     };
 
     // Delete a Session Log
