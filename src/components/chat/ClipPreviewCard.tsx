@@ -126,6 +126,21 @@ export const ClipPreviewCard: React.FC<ClipPreviewCardProps> = ({
         setIsPlaying(true);
     };
 
+    const handleScrubBar = (e: React.MouseEvent<HTMLDivElement>) => {
+        const vid = videoRef.current;
+        if (!vid) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickRatio = Math.max(
+            0,
+            Math.min(1, (e.clientX - rect.left) / rect.width)
+        );
+        const targetTime = Math.min(
+            candidate.end_sec - 0.05,
+            candidate.start_sec + clickRatio * duration
+        );
+        vid.currentTime = targetTime;
+        setCurrentTime(targetTime);
+    };
 
     const handleSaveToReel = async () => {
         if (isSaved || isSaving) return;
@@ -205,7 +220,14 @@ export const ClipPreviewCard: React.FC<ClipPreviewCardProps> = ({
                     </div>
                     
                     {/* 20-SEGMENT ARCADE LED BAR */}
-                    <div className={styles.clipLedBar}>
+                    <div
+                        className={styles.clipLedBar}
+                        onClick={handleScrubBar}
+                        onMouseMove={(e) => {
+                            if (e.buttons === 1) handleScrubBar(e);
+                        }}
+                        title="Click or drag to seek within clip"
+                    >
                         {Array.from({ length: totalSegments }).map((_, idx) => (
                             <div
                                 key={idx}
