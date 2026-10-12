@@ -12,6 +12,7 @@ import {
     fetchChatSessions,
     updateChatSession,
 } from '../../services/chatApiService';
+import { getUserReelClips } from '../../services/reelService';
 import { getUserVideos } from '../../services/vaultService';
 import type {
     AgentTraceStep,
@@ -344,21 +345,22 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
         [connectWebSocket, getToken]
     );
 
-        // Initial Bootstrap: Fetch Vault Videos & Chat Sessions
+    // Initial Bootstrap: Fetch Vault Videos, Chat Sessions, & Saved Reel Clips
     useEffect(() => {
         if (hasBootstrappedRef.current) return;
         hasBootstrappedRef.current = true;
-
+        
         async function bootstrapStudio() {
             setIsLoadingSessions(true);
             try {
                 const token = await getToken();
                 if (!token) throw new Error('NO AUTH TOKEN AVAILABLE.');
-                const [videosResult, sessionsResult] = await Promise.allSettled([
+                const [videosResult, sessionsResult, reelClipsResult] = await Promise.allSettled([
                     getUserVideos(token),
                     fetchChatSessions(getToken),
+                    getUserReelClips(token),
                 ]);
-
+                
                 // Always populate Tape Selector with completed Vault videos
                 if (videosResult.status === 'fulfilled') {
                     const completedTapes = videosResult.value.filter(
@@ -374,22 +376,25 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                     );
                 }
 
-                // Populate or create initial Chat Session
+                // Hydrate savedCandidateIds from the user's saved Reel clips
+                if (reelClipsResult.status === 'fulfilled') {
+                    const savedIds = new Set(
+                        reelClipsResult.value
+                            .map((clip) => clip.candidate_id)
+                            .filter((id): id is string => Boolean(id))
+                    );
+                    setSavedCandidateIds(savedIds);
+                }
+
+                // Populate sidebar session list, but ALWAYS default to an empty unsaved session
                 if (sessionsResult.status === 'rejected') {
                     throw sessionsResult.reason;
                 }
-                const existingSessions = sessionsResult.value;
-                if (existingSessions.length > 0) {
-                    setSessions(existingSessions);
-                    await loadAndActivateSession(existingSessions[0].id);
-                } else {
-                    // Start in an unsaved draft state until the user sends a message
-                    setSessions([]);
-                    setActiveSessionId(null);
-                    setMessages([]);
-                    setSelectedVideoIds([]);
-                    await connectWebSocket(null);
-                }
+                setSessions(sessionsResult.value);
+                setActiveSessionId(null);
+                setMessages([]);
+                setSelectedVideoIds([]);
+                await connectWebSocket(null);
             } catch (err) {
                 setErrorMsg(
                     err instanceof Error
@@ -400,9 +405,8 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                 setIsLoadingSessions(false);
             }
         }
-
         void bootstrapStudio();
-    }, [connectWebSocket, getToken, loadAndActivateSession]);
+    }, [connectWebSocket, getToken]);
 
     // Websocket Connection Cleanup
     useEffect(() => {
@@ -437,11 +441,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
             const remaining = sessions.filter((s) => s.id !== sessionId);
             setSessions(remaining);
             if (activeSessionId === sessionId) {
-                if (remaining.length > 0) {
-                    await loadAndActivateSession(remaining[0].id);
-                } else {
-                    await handleCreateSession();
-                }
+                await handleCreateSession();
             }
         } catch (err) {
             setErrorMsg(
