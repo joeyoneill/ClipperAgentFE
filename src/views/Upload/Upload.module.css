@@ -160,8 +160,8 @@
 }
 
 .filename {
-    font-family: 'PixelLife', monospace;
-    font-size: 1.2rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.35rem;
     color: var(--subtitle-yellow);
     overflow: hidden;
     text-overflow: ellipsis;

@@ -8,6 +8,7 @@ import './App.css';
 // Views
 import { Chat } from './views/Chat/Chat';
 import { Home } from './views/Home/Home';
+import { Reel } from './views/Reel/Reel';
 import { Upload } from './views/Upload/Upload';
 import { Vault } from './views/Vault/Vault';
 
@@ -58,17 +59,7 @@ function ArcadeShell() {
                     {currView === 'UPLOAD' && <Upload onSelectMode={setCurrView} />}
                     {currView === 'VAULT' && <Vault onSelectMode={setCurrView} />}
                     {currView === 'CHAT' && <Chat onSelectMode={setCurrView} />}
-                    {
-                        currView !== 'HOME' &&
-                        currView !== 'UPLOAD' &&
-                        currView !== 'VAULT' &&
-                        currView !== 'CHAT' &&
-                    (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>
-                            <p>Active Flow: {currView}</p>
-                            <button onClick={() => setCurrView('HOME')}>&lt; BACK</button>
-                        </div>
-                    )}
+                    {currView === 'REEL' && <Reel onSelectMode={setCurrView} />}
                 </main>
             </div>
         </div>

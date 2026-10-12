@@ -190,8 +190,8 @@
     color: var(--subtitle-yellow);
     border: 2px solid var(--google-blue);
     box-shadow: 3px 3px 0px 0px var(--google-red);
-    font-family: 'PixelLife', monospace;
-    font-size: 0.95rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.15rem;
     padding: 0.35rem 0.6rem;
     white-space: normal;
     word-break: break-all;
@@ -212,6 +212,8 @@
 }
 
 .filenameText {
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
     color: var(--subtitle-yellow);
     overflow: hidden;
     text-overflow: ellipsis;
