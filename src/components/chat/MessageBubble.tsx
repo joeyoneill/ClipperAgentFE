@@ -2,6 +2,7 @@
 
 // imports
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { AgentTraceStep, ChatMessageModel } from '../../types/chat';
 import type { SFVideo } from '../../types/sf_videos';
 import { ClipPreviewCard } from './ClipPreviewCard';
@@ -142,8 +143,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 
                 {/* VISIBLE ASSISTANT TEXT */}
                 {(message.text || isStreamingThisMessage) && (
-                    <div className={styles.messageText}>
-                        {message.text}
+                    <div className={styles.agentMarkdown}>
+                        <ReactMarkdown>{message.text}</ReactMarkdown>
                         {isStreamingThisMessage && (
                             <span className={styles.cursorBlock}> █</span>
                         )}

@@ -420,6 +420,66 @@
     line-height: 1.35;
 }
 
+/* AGENT MESSAGE BUBBLE MARKDOWN */
+
+.agentMarkdown {
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
+    color: #fff;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.agentMarkdown p {
+    margin: 0 0 0.55rem 0;
+}
+
+.agentMarkdown p:last-child {
+    margin-bottom: 0;
+}
+
+.agentMarkdown strong {
+    color: var(--subtitle-yellow);
+    font-weight: normal;
+    text-shadow: 1px 1px 0px #000;
+}
+
+.agentMarkdown em {
+    color: #90caf9;
+    font-style: italic;
+}
+
+.agentMarkdown ul,
+.agentMarkdown ol {
+    margin: 0.35rem 0 0.55rem 1.25rem;
+    padding: 0;
+}
+
+.agentMarkdown li {
+    margin-bottom: 0.25rem;
+}
+
+.agentMarkdown code {
+    font-family: 'VT323', monospace;
+    background: #111;
+    border: 1px solid var(--space-bg-light-gray);
+    color: var(--google-green);
+    padding: 0.05rem 0.35rem;
+    font-size: 1.15rem;
+}
+
+.agentMarkdown h1,
+.agentMarkdown h2,
+.agentMarkdown h3,
+.agentMarkdown h4 {
+    font-family: 'ArcadeRaiders', monospace;
+    font-size: 0.9rem;
+    color: var(--subtitle-yellow);
+    margin: 0.65rem 0 0.35rem 0;
+}
+
+/* ======== */
+
 .cursorBlock {
     color: var(--google-green);
 }
