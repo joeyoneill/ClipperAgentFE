@@ -125,7 +125,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
             {/* MODULE 2: COMM LOGS (FIRESTORE SESSIONS) */}
             <div className={styles.sidebarSectionGrow}>
                 <div className={styles.sectionHeader}>
-                    <span>COMM LOGS</span>
+                    <span>Session History</span>
                     <span>{sessions.length}</span>
                 </div>
                 <button
@@ -134,7 +134,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
                     onClick={onCreateSession}
                     disabled={isStreaming}
                 >
-                    [ + NEW CLIPPING LOG ]
+                    [ + NEW SESSION ]
                 </button>
                 <div className={styles.sessionList}>
                     {isLoadingSessions ? (

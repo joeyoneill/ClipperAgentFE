@@ -7,7 +7,6 @@ import { SessionSidebar } from '../../components/chat/SessionSidebar';
 import { useAuth } from '../../context/AuthContext';
 import {
     buildChatStreamWsUrl,
-    createChatSession,
     deleteChatSession,
     fetchChatSessionDetail,
     fetchChatSessions,
@@ -56,19 +55,31 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
         new Set()
     );
 
-    // Refs for WebSocket & Active Streaming Message Bubble
+    // Refs for WebSocket, Active Streaming Message Bubble & Smart Scroll
     const wsRef = useRef<WebSocket | null>(null);
     const streamingMsgIdRef = useRef<string | null>(null);
+    const feedContainerRef = useRef<HTMLDivElement | null>(null);
     const feedEndRef = useRef<HTMLDivElement | null>(null);
+    const isUserNearBottomRef = useRef(true);
     const hasBootstrappedRef = useRef(false);
-
-    const scrollToBottom = useCallback(() => {
-        feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    
+    // Track whether the user is near the bottom of the chat feed
+    const handleFeedScroll = useCallback(() => {
+        const el = feedContainerRef.current;
+        if (!el) return;
+        const distanceFromBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight;
+        isUserNearBottomRef.current = distanceFromBottom <= 80;
     }, []);
-
+    
+    // Only auto-scroll if the user hasn't scrolled up to read
     useEffect(() => {
-        scrollToBottom();
-    }, [messages, isStreaming, scrollToBottom]);
+        if (!isUserNearBottomRef.current) return;
+        const el = feedContainerRef.current;
+        if (el) {
+            el.scrollTop = el.scrollHeight;
+        }
+    }, [messages]);
 
     // Helper to send a typed frame over the active WebSocket
     const sendWsFrame = useCallback((frame: WSClientMessage): boolean => {
@@ -197,17 +208,11 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                         if (!targetId) return;
                         const cand = data.candidate;
                         setMessages((prev) =>
-                            prev.map((m) => {
-                                if (m.id !== targetId) return m;
-                                const alreadyAdded = m.clip_candidates.some(
-                                    (c) => c.id === cand.id
-                                );
-                                if (alreadyAdded) return m;
-                                return {
-                                    ...m,
-                                    clip_candidates: [...m.clip_candidates, cand],
-                                };
-                            })
+                            prev.map((m) =>
+                                m.id === targetId
+                                    ? { ...m, clip_candidates: [cand] }
+                                    : m
+                            )
                         );
                         return;
                     }
@@ -322,6 +327,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
             streamingMsgIdRef.current = null;
             try {
                 const detail = await fetchChatSessionDetail(getToken, sessionId);
+                isUserNearBottomRef.current = true;
                 setMessages(detail.messages || []);
                 setSelectedVideoIds(detail.selected_video_ids || []);
                 await connectWebSocket(sessionId);
@@ -511,6 +517,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
             interrupted: false,
             created_at: new Date().toISOString(),
         };
+        isUserNearBottomRef.current = true;
         streamingMsgIdRef.current = modelPlaceholderId;
         setIsStreaming(true);
         setInputText('');
@@ -572,7 +579,7 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                 >
                     &lt; MAIN DECK
                 </button>
-                <h2 className={styles.heading}>&lt;CLIPPING STUDIO // RAG AGENT&gt;</h2>
+                <h2 className={styles.heading}>&lt;CLIPPER // RAG AGENT&gt;</h2>
                 <div className={styles.connectionIndicator}>
                     <span
                         className={
@@ -613,7 +620,11 @@ export const Chat: React.FC<ChatProps> = ({ onSelectMode }) => {
                 
                 {/* RIGHT CONSOLE: TERMINAL FEED + BIDI INPUT */}
                 <section className={styles.consoleSection}>
-                    <div className={styles.messageFeed}>
+                    <div
+                        ref={feedContainerRef}
+                        onScroll={handleFeedScroll}
+                        className={styles.messageFeed}
+                    >
                         {isLoadingMessages ? (
                             <div className={styles.emptyFeedState}>
                                 <p className={styles.emptyFeedTitle}>
