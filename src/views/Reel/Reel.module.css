@@ -603,6 +603,38 @@
     line-height: 1.35;
 }
 
+.transcriptHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.transcriptEditBox {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.transcriptTextarea {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1.15rem;
+    line-height: 1.35;
+    padding: 0.6rem;
+    background: #000;
+    color: #fff;
+    border: 2px solid var(--google-blue);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.transcriptEditActions {
+    display: flex;
+    gap: 0.45rem;
+    justify-content: flex-end;
+}
+
 /* ================================================================
    RIGHT COLUMN: EXPORT & DOWNLOAD SETTINGS
    ================================================================ */

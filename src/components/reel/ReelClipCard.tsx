@@ -67,6 +67,11 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
     const [titleDraft, setTitleDraft] = useState(clip.title);
     const [isSavingTitle, setIsSavingTitle] = useState(false);
 
+    // Inline Transcript Edit State
+    const [isEditingTranscript, setIsEditingTranscript] = useState(false);
+    const [transcriptDraft, setTranscriptDraft] = useState(clip.transcript_text);
+    const [isSavingTranscript, setIsSavingTranscript] = useState(false);
+
     // Export / Download Configuration State
     const [aspectRatio, setAspectRatio] = useState<AspectRatioType>('original');
     const [resolution, setResolution] = useState<ResolutionType>('1080p');
@@ -195,6 +200,32 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
             setCardError(err instanceof Error ? err.message : 'FAILED TO RENAME CLIP.');
         } finally {
             setIsSavingTitle(false);
+        }
+    };
+
+    const handleSaveTranscript = async () => {
+        const trimmed = transcriptDraft.trim();
+        if (!trimmed || !clipId) return;
+        if (trimmed === clip.transcript_text) {
+            setIsEditingTranscript(false);
+            return;
+        }
+        setIsSavingTranscript(true);
+        setCardError(null);
+        try {
+            const token = await getToken();
+            if (!token) throw new Error('NO AUTH TOKEN AVAILABLE.');
+            const updated = await updateReelClipTitle(token, clipId, {
+                transcript_text: trimmed,
+            });
+            onClipUpdated(updated);
+            setIsEditingTranscript(false);
+        } catch (err) {
+            setCardError(
+                err instanceof Error ? err.message : 'FAILED TO UPDATE TRANSCRIPT.'
+            );
+        } finally {
+            setIsSavingTranscript(false);
         }
     };
 
@@ -477,14 +508,66 @@ export const ReelClipCard: React.FC<ReelClipCardProps> = ({
                                     <strong>EDITOR RATIONALE:</strong> {clip.rationale}
                                 </div>
                             )}
-                            {clip.transcript_text && (
-                                <div className={styles.transcriptSection}>
-                                    <span className={styles.optionLabel}>SLICED TRANSCRIPT:</span>
+                            <div className={styles.transcriptSection}>
+                                <div className={styles.transcriptHeaderRow}>
+                                    <span className={styles.optionLabel}>
+                                        SLICED TRANSCRIPT (CC SOURCE):
+                                    </span>
+                                    {!isEditingTranscript && (
+                                        <button
+                                            type="button"
+                                            className={styles.renameBtn}
+                                            onClick={() => {
+                                                setTranscriptDraft(clip.transcript_text);
+                                                setIsEditingTranscript(true);
+                                            }}
+                                        >
+                                            [ EDIT SUBTITLES ]
+                                        </button>
+                                    )}
+                                </div>
+                                {isEditingTranscript ? (
+                                    <div className={styles.transcriptEditBox}>
+                                        <textarea
+                                            className={styles.transcriptTextarea}
+                                            value={transcriptDraft}
+                                            onChange={(e) =>
+                                                setTranscriptDraft(e.target.value)
+                                            }
+                                            rows={4}
+                                            disabled={isSavingTranscript}
+                                        />
+                                        <div className={styles.transcriptEditActions}>
+                                            <button
+                                                type="button"
+                                                className={styles.titleSaveBtn}
+                                                onClick={handleSaveTranscript}
+                                                disabled={
+                                                    isSavingTranscript ||
+                                                    !transcriptDraft.trim()
+                                                }
+                                            >
+                                                [ {isSavingTranscript ? 'SAVING...' : 'SAVE SUBTITLES'} ]
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={styles.titleCancelBtn}
+                                                onClick={() => {
+                                                    setTranscriptDraft(clip.transcript_text);
+                                                    setIsEditingTranscript(false);
+                                                }}
+                                                disabled={isSavingTranscript}
+                                            >
+                                                [ CANCEL ]
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
                                     <div className={styles.transcriptBox}>
                                         &ldquo;{clip.transcript_text}&rdquo;
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
 

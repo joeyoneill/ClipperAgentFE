@@ -52,7 +52,8 @@ export interface SaveClipRequest {
 }
 
 export interface UpdateSFVideoRequest {
-    title: string;
+    title?: string;
+    transcript_text?: string;
 }
 
 export interface DownloadSFVideoRequest {
