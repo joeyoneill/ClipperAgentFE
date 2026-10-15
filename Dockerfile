@@ -32,7 +32,14 @@ RUN npm run build
 # Stage 2: Production Nginx Server on Port 8080
 FROM nginx:stable-alpine
 
+ARG VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+ARG BACKEND_INTERNAL_URL=http://localhost:8000
+
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN sed -i "s|__FIREBASE_AUTH_DOMAIN__|${VITE_FIREBASE_AUTH_DOMAIN}|g" /etc/nginx/conf.d/default.conf && \
+    CLEAN_BACKEND_URL="$(printf '%s' "${BACKEND_INTERNAL_URL}" | sed 's:/*$::')" && \
+    sed -i "s|__BACKEND_INTERNAL_URL__|${CLEAN_BACKEND_URL}|g" /etc/nginx/conf.d/default.conf
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 8080

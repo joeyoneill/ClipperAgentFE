@@ -1,0 +1,15 @@
+# ==============================================================================
+# Frontend .gcloudignore (capstone-fe)
+# Excludes local node_modules, dist, .git, and .env files from Cloud Build upload.
+# ==============================================================================
+
+.gcloudignore
+.DS_Store
+.git/
+node_modules/
+dist/
+dist-ssr/
+.env
+*.env
+*.local
+*.log

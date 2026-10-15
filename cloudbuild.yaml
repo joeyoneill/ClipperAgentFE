@@ -1,0 +1,153 @@
+# ==============================================================================
+# CLIP_AGENT_OS — Frontend CI/CD Pipeline (capstone-fe/cloudbuild.yaml)
+# ==============================================================================
+# Safe for public GitHub repositories: contains NO hardcoded project IDs,
+# Firebase API keys, or Cloud Run URLs. All environment-specific values are
+# injected via Cloud Build substitution variables ($_...).
+# ==============================================================================
+
+steps:
+  # ----------------------------------------------------------------------------
+  # Step 1: TypeScript Static Type Checking (tsc --noEmit)
+  # ----------------------------------------------------------------------------
+  - id: "typecheck"
+    name: "node:22-bookworm-slim"
+    entrypoint: "sh"
+    args:
+      - "-c"
+      - |
+        set -eu
+        echo "==> [1/4] Installing dependencies and verifying TypeScript (tsc --noEmit)..."
+        npm install --no-audit --no-fund
+        npx tsc -b --noEmit
+
+  # ----------------------------------------------------------------------------
+  # Step 2: Multi-Stage Docker Build (Vite Build + Nginx VPC Proxy Config)
+  # ----------------------------------------------------------------------------
+  - id: "docker-build"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--build-arg"
+      - "VITE_FIREBASE_API_KEY=${_VITE_FIREBASE_API_KEY}"
+      - "--build-arg"
+      - "VITE_FIREBASE_AUTH_DOMAIN=${_VITE_FIREBASE_AUTH_DOMAIN}"
+      - "--build-arg"
+      - "VITE_FIREBASE_PROJECT_ID=${_VITE_FIREBASE_PROJECT_ID}"
+      - "--build-arg"
+      - "VITE_FIREBASE_STORAGE_BUCKET=${_VITE_FIREBASE_STORAGE_BUCKET}"
+      - "--build-arg"
+      - "VITE_FIREBASE_MESSAGING_SENDER_ID=${_VITE_FIREBASE_MESSAGING_SENDER_ID}"
+      - "--build-arg"
+      - "VITE_FIREBASE_APP_ID=${_VITE_FIREBASE_APP_ID}"
+      - "--build-arg"
+      - "VITE_FIREBASE_MEASUREMENT_ID=${_VITE_FIREBASE_MEASUREMENT_ID}"
+      - "--build-arg"
+      - "VITE_BACKEND_BASE_URL=${_VITE_BACKEND_BASE_URL}"
+      - "--build-arg"
+      - "BACKEND_INTERNAL_URL=${_BACKEND_INTERNAL_URL}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${BUILD_ID}"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:latest"
+      - "."
+    waitFor:
+      - "typecheck"
+
+  # ----------------------------------------------------------------------------
+  # Step 3: Push Images to Artifact Registry (Triggers Container Scanning API)
+  # ----------------------------------------------------------------------------
+  - id: "docker-push"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}"
+    waitFor:
+      - "docker-build"
+
+  # ----------------------------------------------------------------------------
+  # Step 4: Deploy to Cloud Run (Public Ingress + VPC Egress) with Rollback Guard
+  # ----------------------------------------------------------------------------
+  - id: "deploy-and-verify"
+    name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        IMAGE_URI="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${BUILD_ID}"
+
+        echo "==> [4/4] Capturing active serving revision for rollback protection..."
+        PREV_REV="$$(gcloud run services describe "${_SERVICE_NAME}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --format="value(status.latestReadyRevisionName)" 2>/dev/null || true)"
+        echo "Previous Ready Revision: $${PREV_REV:-none}"
+
+        rollback_on_failure() {
+          echo "ERROR: Deployment or health check failed for ${_SERVICE_NAME}."
+          if [[ -n "$${PREV_REV}" ]]; then
+            echo "Rolling back 100% of traffic to previous healthy revision: $${PREV_REV}..."
+            gcloud run services update-traffic "${_SERVICE_NAME}" \
+              --region="${_REGION}" \
+              --project="${PROJECT_ID}" \
+              --to-revisions="$${PREV_REV}=100"
+          fi
+          exit 1
+        }
+        trap rollback_on_failure ERR
+
+        echo "==> Deploying ${_SERVICE_NAME} revision (${BUILD_ID}) to Cloud Run..."
+        gcloud run deploy "${_SERVICE_NAME}" \
+          --image="$${IMAGE_URI}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --ingress=all \
+          --no-invoker-iam-check \
+          --network="${_VPC_NETWORK}" \
+          --subnet="${_VPC_SUBNET}" \
+          --vpc-egress=all-traffic \
+          --cpu=1 \
+          --memory=512Mi \
+          --port=8080
+
+        NEW_REV="$$(gcloud run services describe "${_SERVICE_NAME}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --format="value(status.latestReadyRevisionName)")"
+        READY_STATUS="$$(gcloud run revisions describe "$${NEW_REV}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --format="value(status.conditions[?(@.type=='Ready')].status)")"
+
+        if [[ "$${READY_STATUS}" == "False" ]]; then
+          rollback_on_failure
+        fi
+        echo "==> Successfully deployed and verified Ready revision: $${NEW_REV}"
+    waitFor:
+      - "docker-push"
+
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${BUILD_ID}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:latest"
+
+substitutions:
+  _REGION: "us-central1"
+  _AR_REPO: "your-artifact-repo"
+  _SERVICE_NAME: "your-frontend-service"
+  _VPC_NETWORK: "your-vpc-network"
+  _VPC_SUBNET: "your-vpc-subnet"
+  _BACKEND_INTERNAL_URL: "https://your-backend-service.a.run.app"
+  _VITE_BACKEND_BASE_URL: "https://your-frontend-service.a.run.app"
+  _VITE_FIREBASE_API_KEY: "your-firebase-api-key"
+  _VITE_FIREBASE_AUTH_DOMAIN: "your-project-id.firebaseapp.com"
+  _VITE_FIREBASE_PROJECT_ID: "your-project-id"
+  _VITE_FIREBASE_STORAGE_BUCKET: "your-project-id.firebasestorage.app"
+  _VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+  _VITE_FIREBASE_APP_ID: "1:000000000000:web:000000000000"
+  _VITE_FIREBASE_MEASUREMENT_ID: "G-XXXXXXXXXX"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
